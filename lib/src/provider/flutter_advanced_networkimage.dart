@@ -13,7 +13,7 @@ import 'package:flutter_advanced_networkimage/src/utils.dart';
 
 typedef Future<Uint8List> ImageProcessing(Uint8List data);
 
-/// Fetches the given URL from the network, associating it with some options.
+/// Fetches the given URL from the network, associating it with some options. Test
 class AdvancedNetworkImage extends ImageProvider<AdvancedNetworkImage> {
   AdvancedNetworkImage(
     this.url, {
