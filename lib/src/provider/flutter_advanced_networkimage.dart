@@ -16,30 +16,31 @@ typedef Future<Uint8List> ImageProcessing(Uint8List data);
 /// Fetches the given URL from the network, associating it with some options. Test
 class AdvancedNetworkImage extends ImageProvider<AdvancedNetworkImage> {
   AdvancedNetworkImage(
-    this.url, {
-    this.scale: 1.0,
-    this.width,
-    this.height,
-    this.header,
-    this.useDiskCache: false,
-    this.retryLimit: 5,
-    this.retryDuration: const Duration(milliseconds: 500),
-    this.retryDurationFactor: 1.5,
-    this.timeoutDuration: const Duration(seconds: 5),
-    this.loadedCallback,
-    this.loadFailedCallback,
-    this.loadedFromDiskCacheCallback,
-    this.fallbackAssetImage,
-    this.fallbackImage,
-    this.cacheRule,
-    this.loadingProgress,
-    this.getRealUrl,
-    this.preProcessing,
-    this.postProcessing,
-    this.disableMemoryCache: false,
-    this.printError = false,
-    this.skipRetryStatusCode,
-  })  : assert(url != null),
+      this.url, {
+        this.firstTryLocalAsset,
+        this.scale: 1.0,
+        this.width,
+        this.height,
+        this.header,
+        this.useDiskCache: false,
+        this.retryLimit: 5,
+        this.retryDuration: const Duration(milliseconds: 500),
+        this.retryDurationFactor: 1.5,
+        this.timeoutDuration: const Duration(seconds: 5),
+        this.loadedCallback,
+        this.loadFailedCallback,
+        this.loadedFromDiskCacheCallback,
+        this.fallbackAssetImage,
+        this.fallbackImage,
+        this.cacheRule,
+        this.loadingProgress,
+        this.getRealUrl,
+        this.preProcessing,
+        this.postProcessing,
+        this.disableMemoryCache: false,
+        this.printError = false,
+        this.skipRetryStatusCode,
+      })  : assert(url != null),
         assert(scale != null),
         assert(useDiskCache != null),
         assert(retryLimit != null),
@@ -51,6 +52,8 @@ class AdvancedNetworkImage extends ImageProvider<AdvancedNetworkImage> {
 
   /// The URL from which the image will be fetched.
   final String url;
+
+  final String firstTryLocalAsset;
 
   /// The scale to place in the [ImageInfo] object of the image.
   final double scale;
@@ -140,9 +143,9 @@ class AdvancedNetworkImage extends ImageProvider<AdvancedNetworkImage> {
         );
       } else {
         final ImageStreamCompleter completer =
-            PaintingBinding.instance.imageCache.putIfAbsent(
+        PaintingBinding.instance.imageCache.putIfAbsent(
           key,
-          () => load(key, PaintingBinding.instance.instantiateImageCodec),
+              () => load(key, PaintingBinding.instance.instantiateImageCodec),
         );
         if (completer != null) stream.setCompleter(completer);
       }
@@ -172,6 +175,17 @@ class AdvancedNetworkImage extends ImageProvider<AdvancedNetworkImage> {
     assert(key == this);
 
     String uId = uid(key.url);
+
+    // Check to see if the image is available in the asset bundle before trying the network.
+    if (key.firstTryLocalAsset!=null) {
+      await rootBundle.load(key.firstTryLocalAsset).then((value){
+        return decode(
+          value.buffer.asUint8List(),
+          cacheWidth: key.width,
+          cacheHeight: key.height,
+        );
+      });
+    }
 
     if (useDiskCache) {
       try {
@@ -271,7 +285,7 @@ Future<Uint8List> _loadFromDiskCache(
     AdvancedNetworkImage key, String uId) async {
   if (key.cacheRule == null) {
     Directory _cacheImagesDirectory =
-        Directory(join((await getTemporaryDirectory()).path, 'imagecache'));
+    Directory(join((await getTemporaryDirectory()).path, 'imagecache'));
     if (_cacheImagesDirectory.existsSync()) {
       File _cacheImageFile = File(join(_cacheImagesDirectory.path, uId));
       if (_cacheImageFile.existsSync()) {
