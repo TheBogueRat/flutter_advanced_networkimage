@@ -178,8 +178,8 @@ class AdvancedNetworkImage extends ImageProvider<AdvancedNetworkImage> {
 
     // Check to see if the image is available in the asset bundle before trying the network.
     if (key.firstTryLocalAsset!=null) {
-      await rootBundle.load(key.firstTryLocalAsset).then((value){
-        return decode(
+      Uint8List _assetCache = await rootBundle.load(key.firstTryLocalAsset).then((value){
+        return await decode(
           value.buffer.asUint8List(),
           cacheWidth: key.width,
           cacheHeight: key.height,
